@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Order Tracking - Cake Delivery</title>
+    <style>
+        :root {
+            --primary-color: #e91e63;
+            --secondary-color: #ff4081;
+            --success-color: #4CAF50;
+            --warning-color: #FF9800;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 2rem;
+            background: #f8f8f8;
+        }
+
+        .order-card {
+            background: white;
+            border-radius: 10px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 800px;
+        }
+
+        .status-timeline {
+            display: flex;
+            justify-content: space-between;
+            margin: 2rem 0;
+            position: relative;
+        }
+
+        .status-step {
+            text-align: center;
+            z-index: 1;
+            flex: 1;
+        }
+
+        .status-line {
+            position: absolute;
+            top: 20px;
+            left: 10%;
+            right: 10%;
+            height: 4px;
+            background: #ddd;
+            z-index: 0;
+        }
+
+        .status-bubble {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #ddd;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .active-step .status-bubble {
+            background: var(--primary-color);
+        }
+
+        .delivery-map {
+            height: 300px;
+            background: #eee;
+            border-radius: 10px;
+            margin: 2rem 0;
+            position: relative;
+        }
+
+        .delivery-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            padding: 0.8rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-warning {
+            background: var(--warning-color);
+            color: white;
+        }
+
+        .issue-form {
+            display: none;
+            margin-top: 2rem;
+            padding: 1rem;
+            border: 1px solid #eee;
+            border-radius: 5px;
+        }
+
+        .eta-display {
+            background: #e8f5e9;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+        }
+
+        .confirmation-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="order-card">
+        <h2>Order #10025 - Chocolate Celebration Cake</h2>
+        
+        <!-- Status Timeline -->
+        <div class="status-timeline">
+            <div class="status-step active-step">
+                <div class="status-bubble">✓</div>
+                <p>Ordered<br>10:00 AM</p>
+            </div>
+            <div class="status-step active-step">
+                <div class="status-bubble">👨🍳</div>
+                <p>Baking<br>10:30 AM</p>
+            </div>
+            <div class="status-step active-step">
+                <div class="status-bubble">🚚</div>
+                <p>Picked Up<br>11:45 AM</p>
+            </div>
+            <div class="status-step">
+                <div class="status-bubble">🏡</div>
+                <p>Delivered</p>
+            </div>
+            <div class="status-line"></div>
+        </div>
+
+        <!-- Delivery Information -->
+        <div class="eta-display">
+            <h4>Estimated Delivery Time: 12:15 PM - 12:30 PM</h4>
+            <p>Delivery Partner: John D. ⭐4.8 (200+ deliveries)</p>
+            <p>Vehicle: Motorcycle (ABC-1234)</p>
+        </div>
+
+        <!-- Live Tracking Map -->
+        <div class="delivery-map">
+            <!-- Integration with real map API would go here -->
+            <div style="padding: 1rem; color: #666">
+                Live tracking map would be displayed here
+            </div>
+        </div>
+
+        <!-- Delivery Actions -->
+        <div class="delivery-actions">
+            <button class="btn btn-primary" onclick="showConfirmation()">
+                Confirm Delivery Received
+            </button>
+            <button class="btn btn-warning" onclick="showIssueForm()">
+                Report Issue
+            </button>
+        </div>
+
+        <!-- Issue Reporting Form -->
+        <div class="issue-form" id="issueForm">
+            <h3>Report Delivery Issue</h3>
+            <select id="issueType" class="form-input">
+                <option value="">Select Issue Type</option>
+                <option>Late Delivery</option>
+                <option>Damaged Product</option>
+                <option>Wrong Item</option>
+                <option>Other</option>
+            </select>
+            <textarea id="issueDetails" placeholder="Describe the issue..." 
+                     rows="4" class="form-input" style="margin: 1rem 0"></textarea>
+            <input type="file" id="issuePhoto" accept="image/*">
+            <button class="btn btn-primary" onclick="submitIssue()">Submit Report</button>
+        </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div class="confirmation-modal" id="confirmationModal">
+        <h3>Confirm Delivery</h3>
+        <p>Please confirm you have received the order in good condition:</p>
+        <div class="confirmation-options">
+            <button class="btn btn-primary" onclick="confirmDelivery(true)">
+                ✅ Everything is OK
+            </button>
+            <button class="btn btn-warning" onclick="confirmDelivery(false)">
+                ❌ Report Problem
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Delivery Tracking Simulation
+        let deliveryStatus = {
+            pickedUpTime: "11:45 AM",
+            eta: {
+                start: "12:15 PM",
+                end: "12:30 PM"
+            },
+            deliveryPartner: {
+                name: "John D.",
+                rating: 4.8,
+                vehicle: "Motorcycle ABC-1234"
+            }
+        };
+
+        // Confirmation Handling
+        function showConfirmation() {
+            document.getElementById('confirmationModal').style.display = 'block';
+        }
+
+        function confirmDelivery(success) {
+            if(success) {
+                alert('Thank you for confirming! Enjoy your cake! 🎂');
+                // Update status to delivered
+                document.querySelectorAll('.status-step')[3].classList.add('active-step');
+            } else {
+                showIssueForm();
+            }
+            document.getElementById('confirmationModal').style.display = 'none';
+        }
+
+        // Issue Reporting
+        function showIssueForm() {
+            document.getElementById('issueForm').style.display = 'block';
+        }
+
+        function submitIssue() {
+            const issueType = document.getElementById('issueType').value;
+            const details = document.getElementById('issueDetails').value;
+            
+            if(!issueType || !details) {
+                alert('Please fill all required fields');
+                return;
+            }
+
+            alert('Issue reported successfully. We will contact you shortly!');
+            document.getElementById('issueForm').style.display = 'none';
+            // Reset form
+            document.getElementById('issueForm').reset();
+        }
+
+        // Simulate live ETA updates
+        function updateETA() {
+            const etaElement = document.querySelector('.eta-display h4');
+            const times = ["12:10 PM - 12:25 PM", "12:05 PM - 12:20 PM", "12:15 PM - 12:30 PM"];
+            let currentIndex = 0;
+            
+            setInterval(() => {
+                etaElement.textContent = `Estimated Delivery Time: ${times[currentIndex]}`;
+                currentIndex = (currentIndex + 1) % times.length;
+            }, 5000);
+        }
+
+        updateETA();
+    </script>
+</body>
+</html>
